@@ -11,6 +11,9 @@ import { GithubSite } from '@/components/custom'
       <h2 class="font-bold text-md">
         Anonymous
       </h2>
+      <p class="text-xs text-gray-500">
+        <GithubSite />
+      </p>
     </div>
   </div>
 </template>
