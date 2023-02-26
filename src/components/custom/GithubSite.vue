@@ -1,5 +1,5 @@
 <template>
-  <div class="text-center text-neutral-500">
-    <span>❤️ World Peace!!! </span>
+  <div class="text-neutral-400">
+    <span>World Peace !!!</span>
   </div>
 </template>

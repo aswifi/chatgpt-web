@@ -1,5 +1,7 @@
 import 'highlight.js/styles/xcode.css'
-import '@/styles/global.css'
+import '@/styles/lib/tailwind.css'
+import '@/styles/lib/github-markdown.less'
+import '@/styles/global.less'
 
 /** Tailwind's Preflight Style Override */
 function naiveStyleOverride() {

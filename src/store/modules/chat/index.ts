@@ -6,6 +6,13 @@ export const useChatStore = defineStore('chat-store', {
   state: (): Chat.ChatState => getLocalState(),
 
   getters: {
+    getChatHistoryByCurrentActive(state: Chat.ChatState) {
+      const index = state.history.findIndex(item => item.uuid === state.active)
+      if (index !== -1)
+        return state.history[index]
+      return null
+    },
+
     getChatByUuid(state: Chat.ChatState) {
       return (uuid?: number) => {
         if (uuid)
@@ -68,6 +75,18 @@ export const useChatStore = defineStore('chat-store', {
       return await this.reloadRoute(uuid)
     },
 
+    getChatByUuidAndIndex(uuid: number, index: number) {
+      if (!uuid || uuid === 0) {
+        if (this.chat.length)
+          return this.chat[0].data[index]
+        return null
+      }
+      const chatIndex = this.chat.findIndex(item => item.uuid === uuid)
+      if (chatIndex !== -1)
+        return this.chat[chatIndex].data[index]
+      return null
+    },
+
     addChatByUuid(uuid: number, chat: Chat.Chat) {
       if (!uuid || uuid === 0) {
         if (this.history.length === 0) {
@@ -106,6 +125,22 @@ export const useChatStore = defineStore('chat-store', {
       const chatIndex = this.chat.findIndex(item => item.uuid === uuid)
       if (chatIndex !== -1) {
         this.chat[chatIndex].data[index] = chat
+        this.recordState()
+      }
+    },
+
+    deleteChatByUuid(uuid: number, index: number) {
+      if (!uuid || uuid === 0) {
+        if (this.chat.length) {
+          this.chat[0].data.splice(index, 1)
+          this.recordState()
+        }
+        return
+      }
+
+      const chatIndex = this.chat.findIndex(item => item.uuid === uuid)
+      if (chatIndex !== -1) {
+        this.chat[chatIndex].data.splice(index, 1)
         this.recordState()
       }
     },

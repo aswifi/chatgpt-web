@@ -1,3 +1,59 @@
+## v2.7.3
+
+`2023-02-25`
+
+### Feature
+- 适配系统深色模式 [#118](https://github.com/Chanzhaoyu/chatgpt-web/issues/103)
+### BugFix
+- 修复用户消息能被渲染为 `HTML` 问题 [#117](https://github.com/Chanzhaoyu/chatgpt-web/issues/117)
+
+## v2.7.2
+
+`2023-02-24`
+### Enhancement
+- 消息使用 [github-markdown-css](https://www.npmjs.com/package/github-markdown-css) 进行美化，现在支持全语法
+- 移除测试无用函数
+
+## v2.7.1
+
+`2023-02-23`
+
+因为消息流在 `accessToken` 中存在解析失败和消息不完整等一系列的问题，调整回正常消息形式
+
+### Feature
+- 现在可以中断请求过长没有答复的消息
+- 现在可以删除单条消息
+- 设置中显示当前版本信息
+
+### BugFix
+- 回退 `2.7.0` 的消息不稳定的问题
+
+## v2.7.0
+
+`2023-02-23`
+
+### Feature
+- 使用消息流返回信息，反应更迅速
+
+### Enhancement
+- 样式的一点小改动
+
+## v2.6.2
+
+`2023-02-22`
+### BugFix
+- 还原修改代理导致的异常问题
+
+## v2.6.1
+
+`2023-02-22`
+
+### Feature
+- 新增 `Railway` 部署模版
+
+### BugFix
+- 手动打包 `Proxy` 问题
+
 ## v2.6.0
 
 `2023-02-21`

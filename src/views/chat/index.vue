@@ -1,19 +1,20 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { NButton, NInput, useDialog } from 'naive-ui'
+import { NButton, NInput, useDialog, useMessage } from 'naive-ui'
 import { Message } from './components'
 import { useScroll } from './hooks/useScroll'
 import { useChat } from './hooks/useChat'
 import { HoverButton, SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useChatStore } from '@/store'
-import { fetchChatAPI } from '@/api'
+import { fetchChatAPIProcess } from '@/api'
 
 let controller = new AbortController()
 
 const route = useRoute()
 const dialog = useDialog()
+const ms = useMessage()
 
 const chatStore = useChatStore()
 
@@ -81,21 +82,40 @@ async function onConversation() {
   scrollToBottom()
 
   try {
-    const { data } = await fetchChatAPI<Chat.ConversationResponse>(message, options, controller.signal)
-    updateChat(
-      +uuid,
-      dataSources.value.length - 1,
-      {
-        dateTime: new Date().toLocaleString(),
-        text: data.text ?? '',
-        inversion: false,
-        error: false,
-        loading: false,
-        conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
-        requestOptions: { prompt: message, options: { ...options } },
+    await fetchChatAPIProcess<Chat.ConversationResponse>({
+      prompt: message,
+      options,
+      signal: controller.signal,
+      onDownloadProgress: ({ event }) => {
+        const xhr = event.target
+        const { responseText } = xhr
+        // Always process the final line
+        const lastIndex = responseText.lastIndexOf('\n')
+        let chunk = responseText
+        if (lastIndex !== -1)
+          chunk = responseText.substring(lastIndex)
+        try {
+          const data = JSON.parse(chunk)
+          updateChat(
+            +uuid,
+            dataSources.value.length - 1,
+            {
+              dateTime: new Date().toLocaleString(),
+              text: data.text ?? '',
+              inversion: false,
+              error: false,
+              loading: false,
+              conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
+              requestOptions: { prompt: message, options: { ...options } },
+            },
+          )
+          scrollToBottom()
+        }
+        catch (error) {
+          //
+        }
       },
-    )
-    scrollToBottom()
+    })
   }
   catch (error: any) {
     let errorMessage = error?.message ?? 'Something went wrong, please try again later.'
@@ -155,23 +175,42 @@ async function onRegenerate(index: number) {
   )
 
   try {
-    const { data } = await fetchChatAPI<Chat.ConversationResponse>(message, options, controller.signal)
-    updateChat(
-      +uuid,
-      index,
-      {
-        dateTime: new Date().toLocaleString(),
-        text: data.text ?? '',
-        inversion: false,
-        error: false,
-        loading: false,
-        conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
-        requestOptions: { prompt: message, ...options },
+    await fetchChatAPIProcess<Chat.ConversationResponse>({
+      prompt: message,
+      options,
+      signal: controller.signal,
+      onDownloadProgress: ({ event }) => {
+        const xhr = event.target
+        const { responseText } = xhr
+        // Always process the final line
+        const lastIndex = responseText.lastIndexOf('\n')
+        let chunk = responseText
+        if (lastIndex !== -1)
+          chunk = responseText.substring(lastIndex)
+        try {
+          const data = JSON.parse(chunk)
+          updateChat(
+            +uuid,
+            index,
+            {
+              dateTime: new Date().toLocaleString(),
+              text: data.text ?? '',
+              inversion: false,
+              error: false,
+              loading: false,
+              conversationOptions: { conversationId: data.conversationId, parentMessageId: data.id },
+              requestOptions: { prompt: message, ...options },
+            },
+          )
+        }
+        catch (error) {
+          //
+        }
       },
-    )
+    })
   }
   catch (error: any) {
-    let errorMessage = 'Something went wrong, please try again later.'
+    let errorMessage = error?.message ?? 'Something went wrong, please try again later.'
 
     if (error.message === 'canceled')
       errorMessage = 'Request canceled. Please try again.'
@@ -193,6 +232,22 @@ async function onRegenerate(index: number) {
   finally {
     loading.value = false
   }
+}
+
+function handleDelete(index: number) {
+  if (loading.value)
+    return
+
+  dialog.warning({
+    title: 'Delete Message',
+    content: 'Are you sure to delete this message?',
+    positiveText: 'Yes',
+    negativeText: 'No',
+    onPositiveClick: () => {
+      chatStore.deleteChatByUuid(+uuid, index)
+      ms.success('Message deleted successfully.')
+    },
+  })
 }
 
 function handleClear() {
@@ -217,13 +272,20 @@ function handleEnter(event: KeyboardEvent) {
   }
 }
 
+function handleStop() {
+  if (loading.value) {
+    controller.abort()
+    loading.value = false
+  }
+}
+
 const buttonDisabled = computed(() => {
   return loading.value || !prompt.value || prompt.value.trim() === ''
 })
 
 const wrapClass = computed(() => {
   if (isMobile.value)
-    return ['pt-14', 'pb-14']
+    return ['pt-14', 'pb-16']
 
   return []
 })
@@ -248,7 +310,12 @@ onUnmounted(() => {
 <template>
   <div class="flex flex-col h-full" :class="wrapClass">
     <main class="flex-1 overflow-hidden">
-      <div ref="scrollRef" class="h-full p-4 overflow-hidden overflow-y-auto" :class="[{ 'p-2': isMobile }]">
+      <div
+        id="scrollRef"
+        ref="scrollRef"
+        class="h-full overflow-hidden overflow-y-auto"
+        :class="[isMobile ? 'p-2' : 'p-4']"
+      >
         <template v-if="!dataSources.length">
           <div class="flex items-center justify-center mt-4 text-center text-neutral-300">
             <SvgIcon icon="ri:bubble-chart-fill" class="mr-2 text-3xl" />
@@ -266,7 +333,16 @@ onUnmounted(() => {
               :error="item.error"
               :loading="item.loading"
               @regenerate="onRegenerate(index)"
+              @delete="handleDelete(index)"
             />
+            <div class="flex justify-center">
+              <NButton v-if="loading" ghost @click="handleStop">
+                <template #icon>
+                  <SvgIcon icon="ri:stop-circle-line" />
+                </template>
+                Stop Responding
+              </NButton>
+            </div>
           </div>
         </template>
       </div>
@@ -274,7 +350,7 @@ onUnmounted(() => {
     <footer :class="footerClass">
       <div class="flex items-center justify-between space-x-2">
         <HoverButton @click="handleClear">
-          <span class="text-xl text-[#4f555e]">
+          <span class="text-xl text-[#4f555e] dark:text-white">
             <SvgIcon icon="ri:delete-bin-line" />
           </span>
         </HoverButton>
@@ -287,7 +363,9 @@ onUnmounted(() => {
         />
         <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
           <template #icon>
-            <SvgIcon icon="ri:send-plane-fill" />
+            <span class="dark:text-black">
+              <SvgIcon icon="ri:send-plane-fill" />
+            </span>
           </template>
         </NButton>
       </div>

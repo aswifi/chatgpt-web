@@ -1,0 +1,29 @@
+x-uffizzi:
+  ingress:
+    service: app
+    port: 80
+
+services:
+  app:
+    build: .
+    deploy:
+      resources:
+        limits:
+          memory: 4000M
+    restart: always
+    ports:
+      - "3002:80"
+    privileged: true
+    depends_on:
+      - app
+    cap_add:
+      - SYS_ADMIN
+    secrets:
+      # 二选一
+      - OPENAI_API_KEY
+      # 二选一
+      - OPENAI_ACCESS_TOKEN
+      # 反向代理，可选
+      - API_REVERSE_PROXY
+      # 超时，单位毫秒，可选
+      - TIMEOUT_MS
