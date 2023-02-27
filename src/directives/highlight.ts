@@ -1,6 +1,8 @@
 import type { App, Directive } from 'vue'
 import hljs from 'highlight.js'
-import includeCode from '@/utils/functions/includeCode'
+import { includeCode } from '@/utils/format'
+
+hljs.configure({ ignoreUnescapedHTML: true })
 
 function highlightCode(el: HTMLElement) {
   if (includeCode(el.textContent))
