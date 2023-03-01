@@ -1,6 +1,6 @@
 # ChatGPT Web
 
-> 使用 `express` 和 `vue3` 搭建的支持 `ChatGPT` 双模型演示网页
+> 声明：此项目只发布于 Github，基于 MIT 协议，免费且作为开源学习使用。并且不会有任何形式的卖号、付费服务、讨论群、讨论组等行为。谨防受骗。
 
 ![cover](./docs/c1-2.8.0.png)
 ![cover2](./docs/c2-2.8.0.png)
@@ -174,7 +174,7 @@ version: '3'
 
 services:
   app:
-    image: chenzhaoyu94/chatgpt-web  # 总是使用latest,更新时重新pull该tag镜像即可
+    image: chenzhaoyu94/chatgpt-web # 总是使用latest,更新时重新pull该tag镜像即可
     ports:
       - 3002:3002
     environment:
