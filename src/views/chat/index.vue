@@ -1,23 +1,25 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { NButton, NInput, useDialog, useMessage } from 'naive-ui'
+import { NButton, NInput, useDialog } from 'naive-ui'
 import { Message } from './components'
 import { useScroll } from './hooks/useScroll'
 import { useChat } from './hooks/useChat'
+import { useCopyCode } from './hooks/useCopyCode'
 import { HoverButton, SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
 import { useChatStore } from '@/store'
 import { fetchChatAPIProcess } from '@/api'
+import { t } from '@/locales'
 
 let controller = new AbortController()
 
 const route = useRoute()
 const dialog = useDialog()
-const ms = useMessage()
 
 const chatStore = useChatStore()
 
+useCopyCode()
 const { isMobile } = useBasicLayout()
 const { addChat, updateChat, updateChatSome, getChatByUuidAndIndex } = useChat()
 const { scrollRef, scrollToBottom } = useScroll()
@@ -118,7 +120,7 @@ async function onConversation() {
     })
   }
   catch (error: any) {
-    const errorMessage = error?.message ?? 'Something went wrong, please try again later.'
+    const errorMessage = error?.message ?? t('common.wrong')
 
     if (error.message === 'canceled') {
       updateChatSome(
@@ -245,7 +247,7 @@ async function onRegenerate(index: number) {
       return
     }
 
-    const errorMessage = error?.message ?? 'Something went wrong, please try again later.'
+    const errorMessage = error?.message ?? t('common.wrong')
 
     updateChat(
       +uuid,
@@ -271,13 +273,12 @@ function handleDelete(index: number) {
     return
 
   dialog.warning({
-    title: 'Delete Message',
-    content: 'Are you sure to delete this message?',
-    positiveText: 'Yes',
-    negativeText: 'No',
+    title: t('chat.deleteMessage'),
+    content: t('chat.deleteMessageConfirm'),
+    positiveText: t('common.yes'),
+    negativeText: t('common.no'),
     onPositiveClick: () => {
       chatStore.deleteChatByUuid(+uuid, index)
-      ms.success('Message deleted successfully.')
     },
   })
 }
@@ -287,10 +288,10 @@ function handleClear() {
     return
 
   dialog.warning({
-    title: 'Clear Chat',
-    content: 'Are you sure to clear this chat?',
-    positiveText: 'Yes',
-    negativeText: 'No',
+    title: t('chat.clearChat'),
+    content: t('chat.clearChatConfirm'),
+    positiveText: t('common.yes'),
+    negativeText: t('common.no'),
     onPositiveClick: () => {
       chatStore.clearChatByUuid(+uuid)
     },
@@ -315,8 +316,8 @@ function handleStop() {
 
 const placeholder = computed(() => {
   if (isMobile.value)
-    return 'Ask me anything...'
-  return 'Ask me anything... (Shift + Enter = line break)'
+    return t('chat.placeholderMobile')
+  return t('chat.placeholder')
 })
 
 const buttonDisabled = computed(() => {
@@ -325,15 +326,14 @@ const buttonDisabled = computed(() => {
 
 const wrapClass = computed(() => {
   if (isMobile.value)
-    return ['pt-14', 'pb-16']
-
+    return ['pt-14']
   return []
 })
 
 const footerClass = computed(() => {
   let classes = ['p-4']
   if (isMobile.value)
-    classes = ['p-2', 'pr-4', 'fixed', 'bottom-4', 'left-0', 'right-0', 'z-30', 'h-14', 'overflow-hidden']
+    classes = ['sticky', 'left-0', 'bottom-0', 'right-0', 'p-2', 'pr-4', 'h-14', 'overflow-hidden']
   return classes
 })
 
@@ -348,7 +348,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full" :class="wrapClass">
+  <div class="flex flex-col w-full h-full" :class="wrapClass">
     <main class="flex-1 overflow-hidden">
       <div
         id="scrollRef"
@@ -356,58 +356,62 @@ onUnmounted(() => {
         class="h-full overflow-hidden overflow-y-auto"
         :class="[isMobile ? 'p-2' : 'p-4']"
       >
-        <template v-if="!dataSources.length">
-          <div class="flex items-center justify-center mt-4 text-center text-neutral-300">
-            <SvgIcon icon="ri:bubble-chart-fill" class="mr-2 text-3xl" />
-            <span>Aha~</span>
-          </div>
-        </template>
-        <template v-else>
-          <div>
-            <Message
-              v-for="(item, index) of dataSources"
-              :key="index"
-              :date-time="item.dateTime"
-              :text="item.text"
-              :inversion="item.inversion"
-              :error="item.error"
-              :loading="item.loading"
-              @regenerate="onRegenerate(index)"
-              @delete="handleDelete(index)"
-            />
-            <div class="sticky bottom-0 left-0 flex justify-center">
-              <NButton v-if="loading" type="warning" @click="handleStop">
-                <template #icon>
-                  <SvgIcon icon="ri:stop-circle-line" />
-                </template>
-                Stop Responding
-              </NButton>
+        <div class="w-full max-w-screen-xl m-auto">
+          <template v-if="!dataSources.length">
+            <div class="flex items-center justify-center mt-4 text-center text-neutral-300">
+              <SvgIcon icon="ri:bubble-chart-fill" class="mr-2 text-3xl" />
+              <span>Aha~</span>
             </div>
-          </div>
-        </template>
+          </template>
+          <template v-else>
+            <div>
+              <Message
+                v-for="(item, index) of dataSources"
+                :key="index"
+                :date-time="item.dateTime"
+                :text="item.text"
+                :inversion="item.inversion"
+                :error="item.error"
+                :loading="item.loading"
+                @regenerate="onRegenerate(index)"
+                @delete="handleDelete(index)"
+              />
+              <div class="sticky bottom-0 left-0 flex justify-center">
+                <NButton v-if="loading" type="warning" @click="handleStop">
+                  <template #icon>
+                    <SvgIcon icon="ri:stop-circle-line" />
+                  </template>
+                  Stop Responding
+                </NButton>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </main>
     <footer :class="footerClass">
-      <div class="flex items-center justify-between space-x-2">
-        <HoverButton @click="handleClear">
-          <span class="text-xl text-[#4f555e] dark:text-white">
-            <SvgIcon icon="ri:delete-bin-line" />
-          </span>
-        </HoverButton>
-        <NInput
-          v-model:value="prompt"
-          type="textarea"
-          :autosize="{ minRows: 1, maxRows: 2 }"
-          :placeholder="placeholder"
-          @keypress="handleEnter"
-        />
-        <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
-          <template #icon>
-            <span class="dark:text-black">
-              <SvgIcon icon="ri:send-plane-fill" />
+      <div class="w-full max-w-screen-xl m-auto">
+        <div class="flex items-center justify-between space-x-2">
+          <HoverButton @click="handleClear">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:delete-bin-line" />
             </span>
-          </template>
-        </NButton>
+          </HoverButton>
+          <NInput
+            v-model:value="prompt"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 2 }"
+            :placeholder="placeholder"
+            @keypress="handleEnter"
+          />
+          <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
+            <template #icon>
+              <span class="dark:text-black">
+                <SvgIcon icon="ri:send-plane-fill" />
+              </span>
+            </template>
+          </NButton>
+        </div>
       </div>
     </footer>
   </div>
