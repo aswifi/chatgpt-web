@@ -1,4 +1,7 @@
-version: '3'
+x-uffizzi:
+  ingress:
+    service: app
+    port: 3002
 
 services:
   app:
@@ -6,6 +9,12 @@ services:
     image: chenzhaoyu94/chatgpt-web # 总是使用latest,更新时重新pull该tag镜像即可
     ports:
       - 3002:3002
+		restart: always
+    privileged: true
+    depends_on:
+      - app
+    cap_add:
+      - SYS_ADMIN
     environment:
       # 二选一
       OPENAI_API_KEY:
