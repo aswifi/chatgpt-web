@@ -24,15 +24,3 @@ services:
       SOCKS_PROXY_USERNAME: ''
       SOCKS_PROXY_PASSWORD: ''
       HTTPS_PROXY: ''
-  nginx:
-    container_name: nginx
-    image: nginx:alpine
-    ports:
-      - '80:80'
-    expose:
-      - '80'
-    volumes:
-      - ./nginx/html:/usr/share/nginx/html
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-    links:
-      - app
