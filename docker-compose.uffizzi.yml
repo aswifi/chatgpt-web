@@ -1,26 +1,22 @@
-version: '3'
+x-uffizzi:
+  ingress:
+    service: app
+    port: 3002
 
 services:
   app:
-    container_name: chatgpt-web
-    image: chenzhaoyu94/chatgpt-web:latest
-    ports:
-      - 3002:3002
+    build: .
+    deploy:
+      resources:
+        limits:
+          memory: 4000M
     restart: always
+    ports:
+      - "3002:3002"
     privileged: true
+    depends_on:
+      - app
     cap_add:
       - SYS_ADMIN
-    environment:
-      OPENAI_API_KEY: ''
-      OPENAI_ACCESS_TOKEN: ''
-      OPENAI_API_BASE_URL: ''
-      OPENAI_API_MODEL: ''
-      API_REVERSE_PROXY: ''
-      AUTH_SECRET_KEY: ''
-      MAX_REQUEST_PER_HOUR: 0
-      TIMEOUT_MS: 60000
-      SOCKS_PROXY_HOST: ''
-      SOCKS_PROXY_PORT: ''
-      SOCKS_PROXY_USERNAME: ''
-      SOCKS_PROXY_PASSWORD: ''
-      HTTPS_PROXY: ''
+volumes:
+  data:
